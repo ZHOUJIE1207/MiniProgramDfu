@@ -4,6 +4,11 @@ function littleEndianUInt32(x) {
   return tmp >>> 0; // Preserve unsigned.
 }
 
+function littleEndianUint8Array(x) {
+  const tmp = (x[3] << 24) | (x[2] << 16) | (x[1]<<8) | x[0]  
+  return tmp >>> 0; ; // Preserve unsigned.
+}
+
 // Note, this is currently converting converting to little endian and returning a Uint8 Array.
 // TODO: BUG? Is nrf52832_xxaa.dat already LE?
 function littleEndian(src) {
@@ -19,4 +24,5 @@ function littleEndian(src) {
 
 
 exports.littleEndianUInt32 = littleEndianUInt32;
+exports.littleEndianUint8Array = littleEndianUint8Array;
 exports.littleEndian = littleEndian;
