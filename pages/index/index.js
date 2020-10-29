@@ -114,6 +114,7 @@ let bin1Length = 0;
 let bin2Length = 0;
 let frameLastFreq = 0;
 let lastAddr = 0;
+let selectBin = 0;
 
 Page({
 
@@ -854,6 +855,14 @@ Page({
         console.log("PID="+data.getUint8(6).toString(16)+" "+data.getUint8(6).toString(16));
         console.log("VER="+data.getUint8(8).toString(16)+" "+data.getUint8(9).toString(16));
         console.log("Reserved="+data.getUint8(10).toString(16));
+        let resver = data.getUint8(10);
+        if(resver == 1) 
+          selectBin = 2;
+        else if(resver == 2) 
+          selectBin =1;
+       else
+         console.log("Reserved值不合法????")
+        console.log("selectBin="+selectBin);
         that.cmdProduceFunction(OPCODES.SEND_UPDATE_START);
         break;
      case OPCODES.RES_UPDATE_START:
@@ -1360,7 +1369,7 @@ Page({
             break;
         case OPCODES.SEND_BLOCK_DATA:
           // setTimeout(() => {
-            that.sendOTABlockData2(1);
+            that.sendOTABlockData2(selectBin);
           // }, 100);
           // that.sendDeviceInfoCmd();
           
