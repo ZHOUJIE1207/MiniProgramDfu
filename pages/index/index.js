@@ -63,10 +63,11 @@ let bin2Length = 0;
 let frameLastFreq = 0;
 let lastAddr = 0;
 // let selectBin = 0;
-let FILE_HEADER_SIZE = 32;
+// let FILE_HEADER_SIZE = 32;
 let passSendData = false;
 let successCount=0,failCount=0,resendCount=0;
 let binLength = 0;
+let updateResult = false;
 Page({
 
 
@@ -114,9 +115,25 @@ Page({
     // that.unzip(); // 默认下载了文件去解压
   },
   onLoad: function() {
-
+    wx.getSystemInfo({
+      success(res) {
+        console.log('设备品牌:',res.brand)
+        console.log('设备型号:',res.model)
+        console.log('设备像素比:',res.pixelRatio)
+        console.log('屏幕宽度:',res.windowWidth)
+        console.log('屏幕高度:',res.windowHeight)
+        console.log('状态栏的高度:', res.statusBarHeight)
+        console.log('微信设置的语言:',res.language)
+        console.log('微信版本号:',res.version)
+        console.log('操作系统及版本:', res.system)
+        console.log('客户端平台:',res.platform)
+        console.log('用户字体大小:', res.fontSizeSetting)
+        console.log('客户端基础库版本 :', res.SDKVersion)
+        console.log('设备性能等级:', res.benchmarkLevel)
+      }
+    })
   },
-  callbackStep: function(step, result) {
+  callbackStep: function(step, result) { // mark: callbackStep
     var that = this;
       switch (step) {
         case STEP.DOWNFILE: // 去下载固件
@@ -257,7 +274,7 @@ Page({
       }
     })
   },
-  bleCallback: function() {
+  bleCallback: function() { // mark: bleCallback
     var that = this;
     bleUtils.onBluetoothAdapterStateChange(function(res) { //蓝牙转态回调
         if (!res.available) {
@@ -478,7 +495,7 @@ Page({
       // DATA_ADDR = addr;
       // offset = addr - FILE_HEADER_SIZE;
       offset = addr;
-      bin1Length = length;
+      binLength = length;
       that.cmdProduceFunction(OPCODES.SEND_BLOCK_DATA);
         break;
         case OPCODES.RECV_RETRANSFER_REQ:
@@ -509,8 +526,17 @@ Page({
           let result = data.getUint8(4);
           if(result == 0x00){
             console.log("升级成功")
+            updateResult = true
+            wx.showToast({
+              title: '升级成功',
+              icon: 'success',
+            })
           }else{
             console.log("升级失败")
+            updateResult = false;
+            wx.showToast({
+              title: '升级失败',
+            })
           }
           that.cmdProduceFunction(OPCODES.SEND_REBOOT);
             break;
@@ -788,7 +814,7 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
   // let offset = 0;
   // let bin_data = self.data.bin_data;
   let binData = self.data.bin_data
-  let length = bin1Length;
+  let length = binLength;
   let requestLength = offset + length;
   let curLength = 0;
 
@@ -825,6 +851,7 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
           loadingHidden: true
         })
         clearInterval(inter)
+        self.callbackStep(STEP.RESULT,updateResult)
         self.cmdProduceFunction(OPCODES.SEND_TRANS_END)
         return;
     }
@@ -907,7 +934,9 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
           loadingHidden: true
         })
         clearInterval(inter)
+        self.callbackStep(STEP.RESULT,updateResult)
         self.cmdProduceFunction(OPCODES.SEND_TRANS_END)
+
         return;
     }
     
