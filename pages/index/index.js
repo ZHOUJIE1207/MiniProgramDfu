@@ -44,7 +44,8 @@ const reverseLookup = obj => val => {
 
 
 let expectedCRC;
-const binFilename = "JD-V10_BETA_OTA_0308.bin";
+const binFilename = "JD-V10_OTA_0311_BTON.bin";
+const url = 'https://file.ykt56.cn/add881a8d03f72d6a48d.bin/JD-V10_OTA_0311_BTON.bin';
 const UUID_OTA_SERVICE = 'F000FFC0-0451-4000-B000-000000000000';
 const UUID_TX = 'F000FFC1-0451-4000-B000-000000000000';
 const UUID_RX = 'F000FFC2-0451-4000-B000-000000000000';
@@ -178,7 +179,7 @@ Page({
       //url: 'https://www.echipfoundry.com/static/firmware/JD-V10_TEST_0210.bin',
       // url:'https://file.ykt56.cn/5e4ca027e0e07bcc8efa.bin/JD-V10_TEST_0210.bin',
       // url:'https://file.ykt56.cn/259c2a2667467319cfa0.bin/JD-V10_TEST_OTA_0325.bin',
-      url:'https://file.ykt56.cn/95543fe204c739100785.bin/JD-V10_BETA_OTA_0308.bin',
+      url:url,
       success: function(res) {
         wx.saveFile({
           tempFilePath: res.tempFilePath,
