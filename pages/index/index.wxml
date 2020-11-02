@@ -1,7 +1,7 @@
 <view class="container">
 <loading hidden="{{  loadingHidden }}">
 
-    ({{total}}/{{count}})写入{{percentage}}%
+    ({{count}}/{{total}})写入{{percentage}}%
 
   </loading>
   <view class='order_process'>
