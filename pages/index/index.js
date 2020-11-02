@@ -62,11 +62,11 @@ let bin1Length = 0;
 let bin2Length = 0;
 let frameLastFreq = 0;
 let lastAddr = 0;
-let selectBin = 0;
+// let selectBin = 0;
 let FILE_HEADER_SIZE = 32;
 let passSendData = false;
 let successCount=0,failCount=0,resendCount=0;
-
+let binLength = 0;
 Page({
 
 
@@ -457,14 +457,14 @@ Page({
         console.log("PID="+data.getUint8(6).toString(16)+" "+data.getUint8(6).toString(16));
         console.log("VER="+data.getUint8(8).toString(16)+" "+data.getUint8(9).toString(16));
         console.log("Reserved="+data.getUint8(10).toString(16));
-        let resver = data.getUint8(10);
-        if(resver == 1) 
-          selectBin = 2;
-        else if(resver == 2) 
-          selectBin =1;
-       else
-         console.log("Reserved值不合法????")
-        console.log("selectBin="+selectBin);
+      //   let resver = data.getUint8(10);
+      //   if(resver == 1) 
+      //     selectBin = 2;
+      //   else if(resver == 2) 
+      //     selectBin =1;
+      //  else
+      //    console.log("Reserved值不合法????")
+      //   console.log("selectBin="+selectBin);
         that.cmdProduceFunction(OPCODES.SEND_UPDATE_START);
         break;
      case OPCODES.RES_UPDATE_START:
@@ -473,9 +473,12 @@ Page({
       console.log("length="+data.getUint8(9).toString(16)+" "+data.getUint8(10).toString(16)+" "+data.getUint8(11).toString(16)+" "+data.getUint8(12).toString(16));
       console.log("size="+data.getUint8(13).toString(16)+" "+data.getUint8(14).toString(16));
       let addr = littleEndianUtils.littleEndianUInt32(data.getUint32(5));
-      console.log("addr="+addr);
-      DATA_ADDR = addr;
-      offset = addr - FILE_HEADER_SIZE;
+      let length = littleEndianUtils.littleEndianUInt32(data.getUint32(9));
+      console.log("addr="+addr+",length="+length);
+      // DATA_ADDR = addr;
+      // offset = addr - FILE_HEADER_SIZE;
+      offset = addr;
+      bin1Length = length;
       that.cmdProduceFunction(OPCODES.SEND_BLOCK_DATA);
         break;
         case OPCODES.RECV_RETRANSFER_REQ:
@@ -485,15 +488,16 @@ Page({
           console.log("addr="+data.getUint8(4).toString(16)+" "+data.getUint8(5).toString(16)+" "+data.getUint8(6).toString(16)+" "+data.getUint8(7).toString(16));
           let resendAddr = littleEndianUtils.littleEndianUInt32(data.getUint32(4));
           let seq = data.getUint8(1);
-          if(seq != frameLastFreq && DATA_ADDR != lastAddr){
+          if(seq != frameLastFreq && resendAddr != lastAddr){
             frameSeq = seq + 1;
             if(frameSeq >= 0xff){
               frameSeq =0;
             }
-            DATA_ADDR = resendAddr;
-            offset = resendAddr-FILE_HEADER_SIZE;
+            // DATA_ADDR = resendAddr;
+            // offset = resendAddr-FILE_HEADER_SIZE;
+            offset = resendAddr;
             frameLastFreq = frameSeq;
-            lastAddr = DATA_ADDR;
+            lastAddr = offset;
             passSendData = false;
           }else{
               passSendData = true; 
@@ -784,22 +788,23 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
   // let offset = 0;
   // let bin_data = self.data.bin_data;
   let binData = self.data.bin_data
-  let length = 0;
-  let requestLength = 0;
+  let length = bin1Length;
+  let requestLength = offset + length;
+  let curLength = 0;
 
-  if(type == 0){
-     offset = 0;
-     length = bin1Length + bin2Length;
-     requestLength = length;
-  }else if(type == 1){
-    offset = 0;
-    length = bin1Length;
-    requestLength = length;
-  }else if(type == 2){
-    offset = bin1Length;
-    length = bin2Length;
-    requestLength = bin1Length + bin2Length;
-  }
+  // if(type == 0){
+  //    offset = 0;
+  //    length = bin1Length + bin2Length;
+  //    requestLength = length;
+  // }else if(type == 1){
+  //   offset = 0;
+  //   length = bin1Length;
+  //   requestLength = length;
+  // }else if(type == 2){
+  //   offset = bin1Length;
+  //   length = bin2Length;
+  //   requestLength = bin1Length + bin2Length;
+  // }
   let total = Math.round(length / BLOCK_SZIE) ;
   // let count = 0;
 
@@ -825,7 +830,7 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
     }
     
     let step = offset + BLOCK_SZIE > requestLength ? requestLength - offset : BLOCK_SZIE;
-    let body = new Uint8Array(binData, offset+FILE_HEADER_SIZE, step)
+    let body = new Uint8Array(binData, offset, step)
     let data = new ArrayBuffer(step+8);
     let dataView = new DataView(data);
 
@@ -836,28 +841,29 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
     dataView.setUint8(1, frameSeq) //...
     dataView.setUint8(2, step+4)
     dataView.setUint8(3, 0x00)
-    dataView.setUint8(4,(DATA_ADDR & 0xFF));
-    dataView.setUint8(5,((DATA_ADDR & 0xFF00)>>8));
-    dataView.setUint8(6,((DATA_ADDR & 0xFF0000)>>16));
-    dataView.setUint8(7,(DATA_ADDR >> 24));
+    dataView.setUint8(4,(offset & 0xFF));
+    dataView.setUint8(5,((offset & 0xFF00)>>8));
+    dataView.setUint8(6,((offset & 0xFF0000)>>16));
+    dataView.setUint8(7,(offset >> 24));
     self.printSendData(dataView);
-    console.log("frameseq="+frameSeq+",data_addr="+DATA_ADDR+",offset="+offset+",step="+step);
-    if(DATA_ADDR - offset != 32){
-      console.log('发送数据错误')
-      console.log("successCount="+successCount+",failCount="+failCount+",resendCount="+resendCount);
-        // wx.hideLoading()
-        self.setData({
-          loadingHidden: true
-        })
-        clearInterval(inter)
-        // self.cmdProduceFunction(OPCODES.SEND_TRANS_END)
-        return;
-    }
+    console.log("frameseq="+frameSeq+",offset="+offset+",step="+step);
+    // if(DATA_ADDR - offset != 32){
+    //   console.log('发送数据错误')
+    //   console.log("successCount="+successCount+",failCount="+failCount+",resendCount="+resendCount);
+    //     // wx.hideLoading()
+    //     self.setData({
+    //       loadingHidden: true
+    //     })
+    //     clearInterval(inter)
+    //     // self.cmdProduceFunction(OPCODES.SEND_TRANS_END)
+    //     return;
+    // }
     if(passSendData) {
       console.log('跳过重复的数据')
       frameSeq++;
-      DATA_ADDR += step;
+      // DATA_ADDR += step;
       offset += step;
+      curLength += step;
       passSendData = false;
     }else{
       wx.writeBLECharacteristicValue({
@@ -868,8 +874,9 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
         success: function (res) {
           console.log('写入成功', res.errMsg)
           frameSeq++;
-          DATA_ADDR += step;
+          // DATA_ADDR += step;
           offset += step;
+          curLength += step;
           successCount++;
         },
         fail: function(err) {
@@ -883,8 +890,8 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
       })
     }
     
-    let curLen = (offset >= length) ? offset - length : offset;
-    let percentage = (curLen+step) / length
+    // let curLen = (offset >= length) ? offset - length : offset;
+    let percentage = curLength / length
     percentage = (percentage * 100).toFixed(1)
     console.log("percentage="+percentage);
     self.setData({
