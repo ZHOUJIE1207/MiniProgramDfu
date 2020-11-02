@@ -26,7 +26,7 @@ const OPCODES = {
   RECV_RETRANSFER_REQ: 0x06,
   SEND_TRANS_END: 0x07,
   RES_TRANS_END: 0x08,
-  SEND_REBOOT: 0xB0,
+  SEND_REBOOT: 0x0B,
 };
 
 const reverseLookup = obj => val => {
@@ -579,7 +579,7 @@ Page({
             break;
         case OPCODES.SEND_BLOCK_DATA:
           // setTimeout(() => {
-            that.sendOTABlockData2(selectBin);
+            that.sendOTABlockData2();
           // }, 100);
           // that.sendDeviceInfoCmd();
           
@@ -860,10 +860,10 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
     // }
     if(passSendData) {
       console.log('跳过重复的数据')
-      frameSeq++;
+      // frameSeq++;
       // DATA_ADDR += step;
-      offset += step;
-      curLength += step;
+      // offset += step;
+      // curLength += step;
       passSendData = false;
     }else{
       wx.writeBLECharacteristicValue({
@@ -976,7 +976,7 @@ sendDeviceInfoCmd:function(){
 sendOTADoneResult:function(){
   return this.sendCommonCmd(OPCODES.SEND_TRANS_END);
 },
-sendRebootCmd:function(){
+sendRebootCmd:function(){ // mark: sendRebootCmd
   frameSeq++;
   return this.sendCommonCmd(OPCODES.SEND_REBOOT);
 },
