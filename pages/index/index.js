@@ -45,18 +45,18 @@ const reverseLookup = obj => val => {
 
 let expectedCRC;
 const binFilename = "JD-V10_OTA_0311_BTON.bin";
-const url = 'https://file.ykt56.cn/add881a8d03f72d6a48d.bin/JD-V10_OTA_0311_BTON.bin';
+const url = "https://file.ykt56.cn/add881a8d03f72d6a48d.bin/JD-V10_OTA_0311_BTON.bin";
 const UUID_OTA_SERVICE = 'F000FFC0-0451-4000-B000-000000000000';
 const UUID_TX = 'F000FFC1-0451-4000-B000-000000000000';
 const UUID_RX = 'F000FFC2-0451-4000-B000-000000000000';
 let frameSeq = 0x00;
 const FRAME_SIZE = 20;
 // const BLOCK_SZIE = FRAME_SIZE - 8;
-const BLOCK_SZIE = 160;
+let  BLOCK_SZIE = 12;
 const DATA_SIZE = BLOCK_SZIE + 4;
 let DATA_ADDR = 0 ;
 let offset =0;
-const DATA_DELAY_TIME = 50;
+let DATA_DELAY_TIME = 50;
 let bin1Offset = 0;
 let bin2Offset = 0;
 let bin1Length = 0;
@@ -115,22 +115,32 @@ Page({
     that.loadFile();
     // that.unzip(); // 默认下载了文件去解压
   },
-  onLoad: function() {
+  onLoad: function() { // mark: onLoad
     wx.getSystemInfo({
       success(res) {
-        console.log('设备品牌:',res.brand)
-        console.log('设备型号:',res.model)
-        console.log('设备像素比:',res.pixelRatio)
-        console.log('屏幕宽度:',res.windowWidth)
-        console.log('屏幕高度:',res.windowHeight)
-        console.log('状态栏的高度:', res.statusBarHeight)
-        console.log('微信设置的语言:',res.language)
-        console.log('微信版本号:',res.version)
-        console.log('操作系统及版本:', res.system)
-        console.log('客户端平台:',res.platform)
-        console.log('用户字体大小:', res.fontSizeSetting)
-        console.log('客户端基础库版本 :', res.SDKVersion)
-        console.log('设备性能等级:', res.benchmarkLevel)
+        // console.log('设备品牌:',res.brand)
+        // console.log('设备型号:',res.model)
+        // console.log('设备像素比:',res.pixelRatio)
+        // console.log('屏幕宽度:',res.windowWidth)
+        // console.log('屏幕高度:',res.windowHeight)
+        // console.log('状态栏的高度:', res.statusBarHeight)
+        // console.log('微信设置的语言:',res.language)
+        // console.log('微信版本号:',res.version)
+        // console.log('操作系统及版本:', res.system)
+        // console.log('客户端平台:',res.platform)
+        // console.log('用户字体大小:', res.fontSizeSetting)
+        // console.log('客户端基础库版本 :', res.SDKVersion)
+        // console.log('设备性能等级:', res.benchmarkLevel)
+        if(res.system.indexOf('iOS') != -1){
+          console.log("iOS");
+          BLOCK_SZIE = 160;
+          DATA_DELAY_TIME = 50;
+        }else{
+          console.log("Android");
+          BLOCK_SZIE = 12;
+          DATA_DELAY_TIME = 70;
+        }
+        console.log("BLOCK_SZIE="+BLOCK_SZIE+",DATA_DELAY_TIME="+DATA_DELAY_TIME);
       }
     })
   },
@@ -542,7 +552,8 @@ Page({
           that.cmdProduceFunction(OPCODES.SEND_REBOOT);
             break;
       default:
-        throw new Error(`Unknwon response op-code received: ${controlOpCodeToString(responseOpCode)}.`);
+        console.log('Unknwon response op-code received');
+        // throw new Error(`Unknwon response op-code received: ${controlOpCodeToString(responseOpCode)}.`);
     }
   },
 
@@ -909,7 +920,7 @@ sendOTABlockData2:function(type){ // mark: sendOTABlockData2
         },
         fail: function(err) {
           // offset = offset - BLOCK_SZIE //失败了重写一遍
-          console.log('写入失败', res.errMsg)
+          console.log('写入失败', err.errMsg)
           failCount++;
         },
         // complete:function(res){
